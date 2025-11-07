@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Slider Control</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎥 Camera Slider Control</h1>
+    
+    <!-- Estado de conexión -->
+    <div id="status" class="status disconnected">
+      🔴 Bluetooth Desconectado
+    </div>
+    
+    <!-- Botón de cámara -->
+    <div class="control-section">
+      <h2>📷 Control de Cámara</h2>
+      <button id="photoBtn" class="btn photo-btn" onclick="takePhoto()" disabled>
+        📸 Tomar Foto
+      </button>
+    </div>
+    
+    <!-- Control Manual -->
+    <div class="control-section">
+      <h2>🎮 Control Manual</h2>
+      
+      <!-- Stepper -->
+      <div class="control-group">
+        <h3>🚂 Movimiento Horizontal (Stepper)</h3>
+        <div class="slider-container">
+          <label>
+            <span>Distancia:</span>
+            <span id="stepperDistValue" class="value">0 mm</span>
+          </label>
+          <input type="range" id="stepperDist" min="-500" max="500" value="0" 
+                 class="slider" oninput="updateStepperDist(this.value)">
+          <div class="slider-labels">
+            <span>-500mm</span>
+            <span>0</span>
+            <span>+500mm</span>
+          </div>
+        </div>
+        
+        <div class="slider-container">
+          <label>
+            <span>Velocidad:</span>
+            <span id="stepperSpeedValue" class="value">50%</span>
+          </label>
+          <input type="range" id="stepperSpeed" min="0" max="100" value="50" 
+                 class="slider" oninput="updateStepperSpeed(this.value)">
+        </div>
+        
+        <div class="button-row">
+          <button class="btn-small" onclick="moveStepperManual()">Mover</button>
+          <button class="btn-small btn-secondary" onclick="zeroStepper()">Reset Posición</button>
+        </div>
+      </div>
+      
+      <!-- Servo -->
+      <div class="control-group">
+        <h3>📐 Ángulo de Cámara (Servo)</h3>
+        <div class="slider-container">
+          <label>
+            <span>Ángulo:</span>
+            <span id="servoValue" class="value">90°</span>
+          </label>
+          <input type="range" id="servoAngle" min="0" max="180" value="90" 
+                 class="slider" oninput="updateServoAngle(this.value)">
+          <div class="slider-labels">
+            <span>0°</span>
+            <span>90°</span>
+            <span>180°</span>
+          </div>
+        </div>
+        
+        <div class="slider-container">
+          <label>
+            <span>Velocidad:</span>
+            <span id="servoSpeedValue" class="value">50%</span>
+          </label>
+          <input type="range" id="servoSpeed" min="0" max="100" value="50" 
+                 class="slider" oninput="updateServoSpeed(this.value)">
+        </div>
+        
+        <button class="btn-small" onclick="moveServoManual()">Mover Servo</button>
+      </div>
+    </div>
+    
+    <!-- Programación de Secuencias -->
+    <div class="control-section">
+      <h2>🎬 Programar Secuencia</h2>
+      
+      <div class="sequence-form">
+        <h3>Agregar Movimiento</h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Distancia (mm):</label>
+            <input type="number" id="seqDistance" value="0" step="10">
+          </div>
+          <div class="form-group">
+            <label>Velocidad (%):</label>
+            <input type="number" id="seqSpeed" value="50" min="0" max="100">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ángulo (°):</label>
+            <input type="number" id="seqAngle" value="90" min="0" max="180">
+          </div>
+          <div class="form-group">
+            <label>Vel. Servo (%):</label>
+            <input type="number" id="seqAngleSpeed" value="50" min="0" max="100">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pausa (ms):</label>
+            <input type="number" id="seqPause" value="0" min="0" step="100">
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="seqSimul">
+              Simultáneo
+            </label>
+          </div>
+        </div>
+        
+        <button class="btn-small" onclick="addMovement()">➕ Agregar Movimiento</button>
+      </div>
+      
+      <div class="sequence-list">
+        <h3>Secuencia Actual (<span id="movCount">0</span> movimientos)</h3>
+        <div id="movementList" class="movement-items"></div>
+        
+        <div class="button-row">
+          <button class="btn-primary" onclick="executeSequence()">▶️ Ejecutar</button>
+          <button class="btn-warning" onclick="clearSequence()">🗑️ Limpiar</button>
+        </div>
+      </div>
+    </div>
+    
+    <p id="message" class="message"></p>
+  </div>
+  <script src="/script.js"></script>
+</body>
+</html>
