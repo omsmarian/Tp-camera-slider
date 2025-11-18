@@ -6,6 +6,9 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 
+// Forward declaration
+class EndstopDriver;
+
 // Estructura para comandos del stepper
 struct StepperCommand {
   long targetPosition;  // Posición objetivo en steps
@@ -38,6 +41,9 @@ private:
   TaskHandle_t taskHandle;
   SemaphoreHandle_t mutex;
   
+  // Endstop driver
+  EndstopDriver* endstopDriver;
+  
   static void stepperTask(void* parameter);
   void processCommand(StepperCommand cmd);
   void stepMotor(long steps, int speed);
@@ -48,6 +54,9 @@ public:
   
   // Inicializar
   bool begin(int stepsPerRev = 200);
+  
+  // Asignar driver de endstops
+  void setEndstopDriver(EndstopDriver* driver);
   
   // Control básico
   bool moveTo(long position, int speed = -1, bool wait = false);
