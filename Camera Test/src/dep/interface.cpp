@@ -2,20 +2,18 @@
 #include "drivers/ServoDriver.h"
 #include "drivers/StepperDriver.h"
 #include "drivers/SequenceManager.h"
-#include "drivers/EndstopDriver.h"
 #include <LittleFS.h>
 
 AsyncWebServer server(80);
 
-// Configuración Access Point
-const char* ap_ssid = "ESP32-CameraSlider";
-const char* ap_password = "slider123";  // Mínimo 8 caracteres
+// Credenciales WiFi
+const char* ssid = "Mariano";
+const char* password = "hola1234";
 
 // Referencias externas a drivers (definidos en main.cpp)
 extern ServoDriver* servoDriver;
 extern StepperDriver* stepperDriver;
 extern SequenceManager* sequenceManager;
-extern class EndstopDriver* endstopDriver;
 
 // Callback para disparar foto
 void (*photoCallbackFunc)() = nullptr;
@@ -50,23 +48,24 @@ void setupWebServer() {
     file = root.openNextFile();
   }
 
-  // Configurar WiFi como Access Point
-  Serial.println("\n📡 Configurando Access Point...");
-  WiFi.mode(WIFI_AP);
+  // Conectar a WiFi
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
   
-  bool apStarted = WiFi.softAP(ap_ssid, ap_password);
+  Serial.print("\n📡 Conectando a WiFi");
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
   
-  if(apStarted) {
-    Serial.println("✅ Access Point iniciado!");
-    Serial.print("📶 SSID: ");
-    Serial.println(ap_ssid);
-    Serial.print("🔑 Password: ");
-    Serial.println(ap_password);
-    Serial.print("🌐 IP del servidor: http://");
-    Serial.println(WiFi.softAPIP());
-    Serial.println("\n👉 Conéctate a la red WiFi y accede a la IP mostrada arriba");
+  if(WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n✅ WiFi conectado!");
+    Serial.print("🌐 IP: http://");
+    Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\n❌ Error iniciando Access Point");
+    Serial.println("\n❌ Error conectando WiFi");
     return;
   }
 
@@ -112,19 +111,10 @@ void setupWebServer() {
     }
   });
 
-  // Ruta para estado BLE y endstops
+  // Ruta para estado BLE
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "{\"connected\":";
     json += bleConnected ? "true" : "false";
-    
-    // Agregar estado de endstops si el driver existe
-    if(endstopDriver) {
-      json += ",\"endstop_min\":";
-      json += endstopDriver->isMinTriggered() ? "true" : "false";
-      json += ",\"endstop_max\":";
-      json += endstopDriver->isMaxTriggered() ? "true" : "false";
-    }
-    
     json += "}";
     request->send(200, "application/json", json);
   });

@@ -1,13 +1,11 @@
 #include "drivers/StepperDriver.h"
-#include "drivers/EndstopDriver.h"
 #include <esp_task_wdt.h>
 
 StepperDriver::StepperDriver(int pul, int dir, int ena)
   : pinPUL(pul), pinDIR(dir), pinENA(ena),
     currentPosition(0), targetPosition(0), currentSpeed(1000),
     isMoving(false), isEnabled(false),
-    stepsPerRevolution(200), maxSpeed(2000), acceleration(500),
-    endstopDriver(nullptr) {
+    stepsPerRevolution(200), maxSpeed(2000), acceleration(500) {
   commandQueue = nullptr;
   taskHandle = nullptr;
   mutex = nullptr;
@@ -73,11 +71,6 @@ bool StepperDriver::begin(int stepsPerRev) {
   Serial.printf("✅ StepperDriver inicializado (PUL:%d DIR:%d ENA:%d)\n", 
                 pinPUL, pinDIR, pinENA);
   return true;
-}
-
-void StepperDriver::setEndstopDriver(EndstopDriver* driver) {
-  endstopDriver = driver;
-  Serial.println("✅ EndstopDriver asignado a StepperDriver");
 }
 
 void StepperDriver::stepperTask(void* parameter) {
@@ -154,20 +147,6 @@ void StepperDriver::stepMotor(long steps, int speed) {
   
   // Mover paso a paso
   for (long i = 0; i < absSteps; i++) {
-    // Verificar endstops antes de cada paso
-    if (endstopDriver != nullptr) {
-      // Si vamos hacia adelante y se activa el máximo, detener
-      if (forward && endstopDriver->isMaxTriggered()) {
-        Serial.println("⚠️ Movimiento detenido por ENDSTOP MAX");
-        break;
-      }
-      // Si vamos hacia atrás y se activa el mínimo, detener
-      if (!forward && endstopDriver->isMinTriggered()) {
-        Serial.println("⚠️ Movimiento detenido por ENDSTOP MIN");
-        break;
-      }
-    }
-    
     // Pulso
     digitalWrite(pinPUL, HIGH);
     delayMicroseconds(5);  // Mínimo 2.5µs para TB6600

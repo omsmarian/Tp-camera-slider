@@ -11,7 +11,6 @@
 class ServoDriver;
 class StepperDriver;
 class SequenceManager;
-class EndstopDriver;
 
 // Función para inicializar el servidor web
 void setupWebServer();

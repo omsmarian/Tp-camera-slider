@@ -5,7 +5,6 @@
 #include "drivers/ServoDriver.h"
 #include "drivers/StepperDriver.h"
 #include "drivers/SequenceManager.h"
-#include "drivers/EndstopDriver.h"
 
 // ========== Configuración de Pines ==========
 // Servo
@@ -16,16 +15,11 @@ const int STEPPER_PUL = 14;  // Pin de pulso (STEP)
 const int STEPPER_DIR = 27;  // Pin de dirección
 const int STEPPER_ENA = 26;  // Pin de enable
 
-// Endstops (Fines de carrera)
-const int ENDSTOP_MIN = 25;  // Pin endstop mínimo
-const int ENDSTOP_MAX = 33;  // Pin endstop máximo
-
 // ========== Drivers ==========
 BleKeyboard bleKeyboard("ESP Camera Slider", "DIY", 100);
 ServoDriver* servoDriver = nullptr;
 StepperDriver* stepperDriver = nullptr;
 SequenceManager* sequenceManager = nullptr;
-EndstopDriver* endstopDriver = nullptr;
 
 // Función para disparar foto
 void takePhoto() {
@@ -34,14 +28,6 @@ void takePhoto() {
     bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
   } else {
     Serial.println("⚠️ Bluetooth no conectado");
-  }
-}
-
-// Callback para cuando se activa un endstop
-void onEndstopTriggered() {
-  if (stepperDriver != nullptr) {
-    stepperDriver->stop();
-    Serial.println("🛑 Motor detenido por endstop");
   }
 }
 
@@ -83,20 +69,6 @@ void setup() {
   stepperDriver->setSpeed(1000);
   stepperDriver->enable();
   
-  // Endstop Driver
-  Serial.println("  → EndstopDriver...");
-  endstopDriver = new EndstopDriver(ENDSTOP_MIN, ENDSTOP_MAX);
-  if (!endstopDriver->begin()) {
-    Serial.println("❌ Error inicializando EndstopDriver");
-    return;
-  }
-  // Configurar callbacks para detener motor
-  endstopDriver->setMinTriggerCallback(onEndstopTriggered);
-  endstopDriver->setMaxTriggerCallback(onEndstopTriggered);
-  
-  // Asignar endstop driver al stepper driver
-  stepperDriver->setEndstopDriver(endstopDriver);
-  
   // Sequence Manager
   Serial.println("  → SequenceManager...");
   sequenceManager = new SequenceManager(servoDriver, stepperDriver);
@@ -127,14 +99,12 @@ void setup() {
   Serial.println("🌐 Accede a la interfaz web desde la IP mostrada arriba");
   Serial.println();
   Serial.println("📌 Configuración de pines:");
-  Serial.printf("   Servo:    GPIO %d\n", SERVO_PIN);
-  Serial.printf("   Stepper:  PUL=%d DIR=%d ENA=%d\n", STEPPER_PUL, STEPPER_DIR, STEPPER_ENA);
-  Serial.printf("   Endstops: MIN=%d MAX=%d\n", ENDSTOP_MIN, ENDSTOP_MAX);
+  Serial.printf("   Servo:   GPIO %d\n", SERVO_PIN);
+  Serial.printf("   Stepper: PUL=%d DIR=%d ENA=%d\n", STEPPER_PUL, STEPPER_DIR, STEPPER_ENA);
   Serial.println();
   Serial.println("🎯 Tasks FreeRTOS creadas:");
-  Serial.println("   - EndstopTask (Core 1, Prioridad 4) ⭐ Máxima prioridad");
   Serial.println("   - ServoTask (Core 1, Prioridad 2)");
-  Serial.println("   - StepperTask (Core 0, Prioridad 1)");
+  Serial.println("   - StepperTask (Core 0, Prioridad 3)");
   Serial.println();
 }
 
