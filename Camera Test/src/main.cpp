@@ -16,6 +16,10 @@ const int STEPPER_ENA = 12;
 const int FC_1 = 23; 
 const int FC_2 = 15;
 
+const int BLUE_LED = 33; // LED Azul para estado BLE
+const int RED_LED = 35;  // LED Rojo para estado de Error
+const int GREEN_LED = 32; // LED Verde para estado de Operación
+
 BleKeyboard bleKeyboard("ESP Camera Slider", "DIY", 100);
 ServoDriver* servoDriver = nullptr;
 StepperDriver* stepperDriver = nullptr;
@@ -34,6 +38,12 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   
+  pinMode(BLUE_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  
+  digitalWrite(BLUE_LED, LOW);
+  digitalWrite(RED_LED, HIGH);
+  
   esp_task_wdt_init(10, false);
   
   Serial.println("🔧 Inicializando drivers...");
@@ -42,8 +52,8 @@ void setup() {
   if (!servoDriver->begin()) return;
   servoDriver->setDefaultSpeed(50);
   
-  // MODIFICADO: Se pasan los pines de FC al constructor
-  stepperDriver = new StepperDriver(STEPPER_PUL, STEPPER_DIR, STEPPER_ENA, FC_1, FC_2);
+  // MODIFICADO: Se pasan los pines de FC y LED verde al constructor
+  stepperDriver = new StepperDriver(STEPPER_PUL, STEPPER_DIR, STEPPER_ENA, FC_1, FC_2, GREEN_LED);
   
   if (!stepperDriver->begin(200)) return;
   stepperDriver->setMaxSpeed(2000);
@@ -63,9 +73,20 @@ void setup() {
 void loop() {
   static bool wasConnected = false;
   bool isConnected = bleKeyboard.isConnected();
+  
+  // Debug: Mostrar estado de conexión
   if (isConnected != wasConnected) {
+    if (isConnected) {
+      digitalWrite(BLUE_LED, HIGH);
+    } else {
+      digitalWrite(BLUE_LED, LOW);
+    }
     updateBLEStatus(isConnected);
     wasConnected = isConnected;
   }
+  
+  // Actualizar LED azul
+  digitalWrite(BLUE_LED, isConnected ? HIGH : LOW);
+  
   vTaskDelay(pdMS_TO_TICKS(50));
 }

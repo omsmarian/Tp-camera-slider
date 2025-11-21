@@ -26,6 +26,9 @@ private:
   int pinLimit1;
   int pinLimit2;
   
+  // Pin LED verde (indica movimiento)
+  int pinLedGreen;
+  
   // Referencia al flag de emergencia externo
   volatile bool* emergencyStopFlag;
   portMUX_TYPE* emergencyMutex;
@@ -56,8 +59,8 @@ private:
   friend class LimitSwitchDriver;
 
 public:
-  // Constructor actualizado: recibe los dos limites al final
-  StepperDriver(int pul, int dir, int ena, int lim1, int lim2);
+  // Constructor actualizado: recibe los dos limites y el LED verde
+  StepperDriver(int pul, int dir, int ena, int lim1, int lim2, int ledGreen);
   ~StepperDriver();
   
   void setEmergencyFlag(volatile bool* flag, portMUX_TYPE* mutex);

@@ -2,8 +2,8 @@
 #include <esp_task_wdt.h>
 
 // Constructor actualizado
-StepperDriver::StepperDriver(int pul, int dir, int ena, int lim1, int lim2)
-  : pinPUL(pul), pinDIR(dir), pinENA(ena), pinLimit1(lim1), pinLimit2(lim2),
+StepperDriver::StepperDriver(int pul, int dir, int ena, int lim1, int lim2, int ledGreen)
+  : pinPUL(pul), pinDIR(dir), pinENA(ena), pinLimit1(lim1), pinLimit2(lim2), pinLedGreen(ledGreen),
     currentPosition(0), targetPosition(0), currentSpeed(1000),
     isMoving(false), isEnabled(false), shouldAbort(false),
     stepsPerRevolution(200), maxSpeed(2000), acceleration(500) {
@@ -38,6 +38,12 @@ bool StepperDriver::begin(int stepsPerRev) {
   // NC a GND -> LOW = Cerrado (OK), HIGH = Abierto (Tope)
   pinMode(pinLimit1, INPUT_PULLDOWN);
   pinMode(pinLimit2, INPUT_PULLDOWN);
+  
+  // Configurar LED verde
+  if (pinLedGreen >= 0) {
+    pinMode(pinLedGreen, OUTPUT);
+    digitalWrite(pinLedGreen, LOW);
+  }
   
   digitalWrite(pinPUL, LOW);
   digitalWrite(pinDIR, LOW);
@@ -77,7 +83,12 @@ void StepperDriver::processCommand(StepperCommand cmd) {
   xSemaphoreTake(mutex, portMAX_DELAY);
   isMoving = true;
   shouldAbort = false;
-
+  xSemaphoreGive(mutex);
+  
+  // Encender LED verde cuando empieza a moverse
+  if (pinLedGreen >= 0) digitalWrite(pinLedGreen, HIGH);
+  
+  xSemaphoreTake(mutex, portMAX_DELAY);
   if (cmd.relative) {
     targetPosition = currentPosition + cmd.targetPosition;
   } else {
@@ -91,6 +102,7 @@ void StepperDriver::processCommand(StepperCommand cmd) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     isMoving = false;
     xSemaphoreGive(mutex);
+    if (pinLedGreen >= 0) digitalWrite(pinLedGreen, LOW);
     return;
   }
   
@@ -102,6 +114,9 @@ void StepperDriver::processCommand(StepperCommand cmd) {
   xSemaphoreTake(mutex, portMAX_DELAY);
   isMoving = false;
   xSemaphoreGive(mutex);
+  
+  // Apagar LED verde cuando termina de moverse
+  if (pinLedGreen >= 0) digitalWrite(pinLedGreen, LOW);
 }
 
 void StepperDriver::stepMotor(long steps, int speed) {

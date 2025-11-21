@@ -104,23 +104,22 @@ void ServoDriver::processCommand(ServoCommand cmd) {
     return;
   }
   
-  // Calcular delay basado en velocidad (1-100% -> 20ms-1ms)
-  int delayTime = map(speed, 0, 100, 20, 1);
+  // Calcular delay basado en velocidad (1-100% -> 50ms-10ms) - más lento
+  int delayTime = map(speed, 0, 100, 50, 10);
   
-  // Mover suavemente
-  int steps = abs(targetAngle - currentAngle);
+  // Mover suavemente con paso más pequeño (0.5 grados)
+  int steps = abs(targetAngle - currentAngle) * 2; // Duplicar pasos para paso de 0.5°
   int direction = (targetAngle > currentAngle) ? 1 : -1;
   
   for (int i = 0; i < steps; i++) {
-    currentAngle += direction;
-    servo.write(currentAngle);
+    // Actualizar cada 2 iteraciones (paso de 0.5°)
+    if (i % 2 == 0) {
+      currentAngle += direction;
+      servo.write(currentAngle);
+    }
     
     // Usar vTaskDelay para no bloquear el watchdog
-    if (delayTime > 0) {
-      vTaskDelay(pdMS_TO_TICKS(delayTime));
-    } else {
-      vTaskDelay(1); // Mínimo 1 tick para dar chance al scheduler
-    }
+    vTaskDelay(pdMS_TO_TICKS(delayTime));
   }
   
   xSemaphoreTake(mutex, portMAX_DELAY);
