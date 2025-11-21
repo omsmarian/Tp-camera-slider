@@ -21,6 +21,7 @@ private:
   int currentAngle;
   int defaultSpeed;
   bool isMoving;
+  bool servoAttached;
   
   QueueHandle_t commandQueue;
   TaskHandle_t taskHandle;

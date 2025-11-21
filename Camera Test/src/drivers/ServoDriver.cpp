@@ -2,7 +2,8 @@
 #include <esp_task_wdt.h>
 
 ServoDriver::ServoDriver(int servoPin) 
-  : pin(servoPin), currentAngle(90), defaultSpeed(50), isMoving(false) {
+  : pin(servoPin), currentAngle(90), defaultSpeed(50), isMoving(false),
+    servoAttached(false) {
   commandQueue = nullptr;
   taskHandle = nullptr;
   mutex = nullptr;
@@ -18,15 +19,16 @@ ServoDriver::~ServoDriver() {
   if (mutex != nullptr) {
     vSemaphoreDelete(mutex);
   }
-  servo.detach();
+  if (servoAttached) {
+    servo.detach();
+  }
 }
 
 bool ServoDriver::begin() {
   // Configurar servo
   ESP32PWM::allocateTimer(0);
   servo.setPeriodHertz(50);
-  servo.attach(pin, 500, 2400);
-  servo.write(currentAngle);
+  servoAttached = false;
   
   // Crear mutex
   mutex = xSemaphoreCreateMutex();
@@ -87,6 +89,20 @@ void ServoDriver::processCommand(ServoCommand cmd) {
   int targetAngle = constrain(cmd.targetAngle, 0, 180);
   int speed = (cmd.speed < 0) ? defaultSpeed : cmd.speed;
   speed = constrain(speed, 1, 100);
+
+  if (!servoAttached) {
+    servo.attach(pin, 500, 2400);
+    servo.write(targetAngle);
+    currentAngle = targetAngle;
+    servoAttached = true;
+
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    isMoving = false;
+    xSemaphoreGive(mutex);
+
+    Serial.printf("✅ Servo activado tras primer comando: %d°\n", currentAngle);
+    return;
+  }
   
   // Calcular delay basado en velocidad (1-100% -> 20ms-1ms)
   int delayTime = map(speed, 0, 100, 20, 1);
